@@ -1,51 +1,63 @@
-require('dotenv').config();
-process.on('uncaughtException', (err) => {
-  console.error('[FATAL] Uncaught Exception:', err);
-  process.exit(1);
-});
-process.on('unhandledRejection', (reason) => {
-  console.error('[FATAL] Unhandled Rejection:', reason);
-  process.exit(1);
-});
+'use strict';
 
+// ── Crash handlers ────────────────────────────────────────────────────────────
+process.on('uncaughtException',  (err) => { console.error('[FATAL] uncaughtException:', err); process.exit(1); });
+process.on('unhandledRejection', (err) => { console.error('[FATAL] unhandledRejection:', err); process.exit(1); });
+
+console.log('[boot] loading modules...');
+
+const http    = require('http');
+const path    = require('path');
+const fs      = require('fs');
+
+console.log('[boot] loading express...');
 const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const path = require('path');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
-const fs = require('fs');
 
-const downloadRouter = require('./download');
-const infoRouter = require('./info');
+console.log('[boot] loading socket.io...');
+const { Server } = require('socket.io');
+
+console.log('[boot] loading middleware...');
+const cors      = require('cors');
+const morgan    = require('morgan');
+const rateLimit = require('express-rate-limit');
+
+console.log('[boot] loading dotenv...');
+require('dotenv').config();
+
+console.log('[boot] loading routers...');
+const downloadRouter      = require('./download');
+const infoRouter          = require('./info');
 const { cleanupOldFiles } = require('./cleanup');
 
-const app = express();
+console.log('[boot] creating app...');
+const app    = express();
 const server = http.createServer(app);
-const io = new Server(server, {
+const io     = new Server(server, {
   cors: { origin: '*', methods: ['GET', 'POST'] }
 });
 
-// Health route registered BEFORE all middleware (helmet, cors, etc.)
-// Railway healthcheck comes from healthcheck.railway.app - helmet would block it
-app.get('/health', (req, res) => res.status(200).json({ status: 'ok', uptime: process.uptime() }));
+// /health FIRST - zero middleware, raw response
+// Railway sends healthcheck from healthcheck.railway.app hostname.
+// Registering before all app.use() calls means nothing can block it.
+app.get('/health', (_req, res) => {
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ status: 'ok', uptime: process.uptime() }));
+});
 
+// Middleware
 app.set('trust proxy', 1);
-app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Static files
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-
-// Flat: static files served from __dirname
 app.use(express.static(__dirname));
 app.use('/uploads', express.static(uploadsDir));
 
+// Rate limiter (only /api/)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 50,
@@ -53,20 +65,24 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
+// Socket.IO
 app.set('io', io);
 io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
-  socket.on('disconnect', () => console.log('Client disconnected:', socket.id));
+  console.log('[ws] connected:', socket.id);
+  socket.on('disconnect', () => console.log('[ws] disconnected:', socket.id));
 });
 
+// API routes
 app.use('/api/download', downloadRouter);
-app.use('/api/info', infoRouter);
+app.use('/api/info',     infoRouter);
 
+// Cleanup
 setInterval(() => cleanupOldFiles(uploadsDir), 30 * 60 * 1000);
 
+// Start
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
-  console.log('VAULTDL running on port ' + PORT);
+  console.log('[boot] VAULTDL listening on 0.0.0.0:' + PORT);
 });
 
 module.exports = { app, io };
