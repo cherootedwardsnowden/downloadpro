@@ -14,9 +14,11 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --omit=dev
 
-# Copy all flat files
 COPY . .
 
 RUN mkdir -p uploads
+
+# force cache bust
+ARG CACHE_BUST=1
 
 CMD ["node", "server.js"]
