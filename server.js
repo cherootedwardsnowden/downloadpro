@@ -28,6 +28,10 @@ const io = new Server(server, {
   cors: { origin: '*', methods: ['GET', 'POST'] }
 });
 
+// Health route registered BEFORE all middleware (helmet, cors, etc.)
+// Railway healthcheck comes from healthcheck.railway.app - helmet would block it
+app.get('/health', (req, res) => res.status(200).json({ status: 'ok', uptime: process.uptime() }));
+
 app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
@@ -41,9 +45,6 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 // Flat: static files served from __dirname
 app.use(express.static(__dirname));
 app.use('/uploads', express.static(uploadsDir));
-
-// Health endpoint BEFORE rate limiter so it is never blocked
-app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
