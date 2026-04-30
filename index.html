@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VAULTDL — Universal Downloader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <span class="sidebar-logo">VAULT<span>DL</span></span>
+    <button class="sidebar-close" id="sidebarClose" aria-label="Kapat">✕</button>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">
+      <span class="nav-label">GENEL</span>
+      <a href="#" class="nav-item active" data-view="downloader"><span class="nav-icon">⬇</span> İndirici</a>
+      <a href="#" class="nav-item" data-view="batch"><span class="nav-icon">📦</span> Toplu İndir</a>
+      <a href="#" class="nav-item" data-view="history"><span class="nav-icon">🕓</span> Geçmiş</a>
+    </div>
+    <div class="nav-section">
+      <span class="nav-label">KATEGORİLER</span>
+      <a href="#" class="nav-item" data-filter="all"><span class="nav-icon">🌐</span> Tümü</a>
+      <a href="#" class="nav-item" data-filter="normal"><span class="nav-icon">📺</span> Normal Siteler</a>
+      <a href="#" class="nav-item" data-filter="nsfw"><span class="nav-icon">🔞</span> NSFW Siteler</a>
+    </div>
+    <div class="nav-section">
+      <span class="nav-label">DESTEKLENEN</span>
+      <div class="platform-grid" id="platformGrid"></div>
+    </div>
+    <div class="nav-section nav-bottom">
+      <span class="nav-label">BİLGİ</span>
+      <div class="sidebar-info">
+        <span>Powered by yt-dlp</span>
+        <span>1000+ site destekli</span>
+        <span>Kayıt gerekmez</span>
+      </div>
+    </div>
+  </nav>
+</aside>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<main class="main">
+  <header class="header">
+    <button class="burger" id="burgerBtn" aria-label="Menü">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="header-brand">VAULT<span>DL</span></div>
+    <div class="header-pills">
+      <span class="pill">yt-dlp</span>
+      <span class="pill">ffmpeg</span>
+      <span class="pill online" id="statusPill">🟢 Online</span>
+    </div>
+  </header>
+
+  <div class="view active" id="view-downloader">
+    <div class="hero">
+      <div class="hero-badge">1000+ SITE DESTEKLİ</div>
+      <h1 class="hero-title">Her Yerden<br><span>İndir.</span></h1>
+      <p class="hero-sub">YouTube, Instagram, TikTok, Twitter ve daha fazlası. Kayıt gerekmez.</p>
+    </div>
+
+    <div class="input-card">
+      <div class="input-row">
+        <div class="url-wrapper">
+          <span class="url-icon" id="urlIcon">🔗</span>
+          <input type="text" id="urlInput" placeholder="URL yapıştır... (youtube.com, instagram.com, vb.)" autocomplete="off" spellcheck="false">
+          <button class="paste-btn" id="pasteBtn" title="Panodan yapıştır">📋</button>
+        </div>
+      </div>
+      <div class="platform-detected" id="platformDetected" style="display:none">
+        <span id="platformBadge"></span>
+        <span id="platformName"></span>
+        <span class="cat-badge" id="categoryBadge"></span>
+      </div>
+      <div class="options-row">
+        <div class="option-group">
+          <label>Kalite</label>
+          <select id="qualitySelect">
+            <option value="best">En İyi</option>
+            <option value="1080p">1080p</option>
+            <option value="720p">720p</option>
+            <option value="480p">480p</option>
+            <option value="360p">360p</option>
+          </select>
+        </div>
+        <div class="option-group">
+          <label>Format</label>
+          <select id="formatSelect">
+            <option value="video">Video (MP4)</option>
+            <option value="audio">Sadece Ses (MP3)</option>
+          </select>
+        </div>
+        <div class="option-toggle">
+          <label>
+            <input type="checkbox" id="subtitlesCheck">
+            <span class="toggle-label">Altyazı</span>
+          </label>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-info" id="infoBtn">🔍 Bilgi Al</button>
+        <button class="btn-download" id="downloadBtn">⬇ İndir</button>
+      </div>
+    </div>
+
+    <div class="info-panel" id="infoPanel" style="display:none">
+      <div class="info-header">
+        <img id="infoThumb" src="" alt="thumbnail">
+        <div class="info-meta">
+          <h3 id="infoTitle"></h3>
+          <div class="info-stats">
+            <span id="infoDuration"></span>
+            <span id="infoUploader"></span>
+            <span id="infoViews"></span>
+          </div>
+          <p id="infoDesc"></p>
+        </div>
+      </div>
+      <div class="formats-list" id="formatsList"></div>
+    </div>
+
+    <div class="progress-card" id="progressCard" style="display:none">
+      <div class="progress-header">
+        <span class="progress-platform" id="progressPlatform"></span>
+        <span class="progress-status" id="progressStatus">Başlatılıyor...</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+        <div class="progress-indeterminate" id="progressIndeterminate"></div>
+      </div>
+      <div class="progress-details">
+        <span id="progressSpeed"></span>
+        <span id="progressEta"></span>
+        <span id="progressSize"></span>
+        <span id="progressPercent"></span>
+      </div>
+      <div class="progress-log" id="progressLog"></div>
+    </div>
+
+    <div class="result-card" id="resultCard" style="display:none">
+      <div class="result-icon">✅</div>
+      <div class="result-info">
+        <div class="result-filename" id="resultFilename"></div>
+        <div class="result-filesize" id="resultFilesize"></div>
+      </div>
+      <a class="btn-dl-final" id="resultDownloadBtn" href="#" download>⬇ Dosyayı İndir</a>
+      <button class="btn-new" id="newDownloadBtn">+ Yeni İndirme</button>
+    </div>
+
+    <div class="error-card" id="errorCard" style="display:none">
+      <div class="error-icon">⚠️</div>
+      <div class="error-msg" id="errorMsg"></div>
+      <button class="btn-retry" id="retryBtn">↩ Tekrar Dene</button>
+    </div>
+
+    <div class="platforms-showcase">
+      <h2>Desteklenen Platformlar</h2>
+      <div class="tabs">
+        <button class="tab active" data-tab="normal">Normal</button>
+        <button class="tab" data-tab="nsfw">NSFW 🔞</button>
+      </div>
+      <div class="tab-content active" id="tab-normal"></div>
+      <div class="tab-content" id="tab-nsfw"></div>
+    </div>
+  </div>
+
+  <div class="view" id="view-batch">
+    <div class="page-header">
+      <h2>📦 Toplu İndirme</h2>
+      <p>Birden fazla URL'yi aynı anda indir (max 10)</p>
+    </div>
+    <div class="batch-card">
+      <textarea id="batchUrls" placeholder="Her satıra bir URL gir:&#10;https://youtube.com/watch?v=...&#10;https://tiktok.com/@...&#10;https://instagram.com/p/..."></textarea>
+      <div class="batch-options">
+        <select id="batchFormat">
+          <option value="video">Video (MP4)</option>
+          <option value="audio">Ses (MP3)</option>
+        </select>
+        <button class="btn-download" id="batchDownloadBtn">⬇ Hepsini İndir</button>
+      </div>
+      <div class="batch-progress" id="batchProgress" style="display:none">
+        <div class="batch-stats"><span id="batchCompleted">0</span>/<span id="batchTotal">0</span> tamamlandı</div>
+        <div class="batch-items" id="batchItems"></div>
+      </div>
+      <div class="batch-results" id="batchResults"></div>
+    </div>
+  </div>
+
+  <div class="view" id="view-history">
+    <div class="page-header">
+      <h2>🕓 İndirme Geçmişi</h2>
+      <p>Bu oturumda indirilen dosyalar</p>
+    </div>
+    <div class="history-list" id="historyList">
+      <div class="empty-state">Henüz indirme yok.</div>
+    </div>
+    <button class="btn-clear-history" id="clearHistoryBtn" style="display:none">🗑 Geçmişi Temizle</button>
+  </div>
+</main>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/platforms.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
